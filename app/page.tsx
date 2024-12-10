@@ -1,101 +1,211 @@
-import Image from "next/image";
+'use client';
+import { useState, useEffect } from "react";
+import Calendar from "react-calendar";
+import "./react-calendar.css";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Check, Edit, Trash } from "lucide-react";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [agendas, setAgendas] = useState<{
+    [key: string]: { text: string; completed: boolean; isEditing: boolean }[];
+  }>({});
+  const [newAgenda, setNewAgenda] = useState("");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const formatDateKey = (date: Date) =>
+    date && new Date(date).toISOString().split("T")[0]; // Format: YYYY-MM-DD
+
+  // Load agendas from localStorage on mount
+  useEffect(() => {
+    const savedAgendas = localStorage.getItem("agendas");
+    if (savedAgendas) {
+      setAgendas(JSON.parse(savedAgendas));
+    }
+  }, []);
+
+  // Save agendas to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("agendas", JSON.stringify(agendas));
+  }, [agendas]);
+
+  const handleAddAgenda = () => {
+    if (selectedDate && newAgenda.trim()) {
+      const dateKey = formatDateKey(selectedDate);
+      setAgendas((prev) => ({
+        ...prev,
+        [dateKey]: [
+          ...(prev[dateKey] || []),
+          { text: newAgenda.trim(), completed: false, isEditing: false },
+        ],
+      }));
+      setNewAgenda("");
+    }
+  };
+
+  const toggleCompleteAgenda = (dateKey: string, index: number) => {
+    setAgendas((prev) => ({
+      ...prev,
+      [dateKey]: prev[dateKey].map((agenda, i) =>
+        i === index ? { ...agenda, completed: !agenda.completed } : agenda
+      ),
+    }));
+  };
+
+  const toggleEditAgenda = (dateKey: string, index: number) => {
+    setAgendas((prev) => ({
+      ...prev,
+      [dateKey]: prev[dateKey].map((agenda, i) =>
+        i === index ? { ...agenda, isEditing: !agenda.isEditing } : agenda
+      ),
+    }));
+  };
+
+  const handleEditAgenda = (dateKey: string, index: number, newText: string) => {
+    setAgendas((prev) => ({
+      ...prev,
+      [dateKey]: prev[dateKey].map((agenda, i) =>
+        i === index ? { ...agenda, text: newText, isEditing: false } : agenda
+      ),
+    }));
+  };
+
+  const handleRemoveAgenda = (dateKey: string, index: number) => {
+    setAgendas((prev) => ({
+      ...prev,
+      [dateKey]: prev[dateKey].filter((_, i) => i !== index),
+    }));
+  };
+
+  return (
+    <div className="min-h-screen p-8 flex flex-col items-center gap-8 bg-muted">
+      <h1 className="text-3xl font-extrabold text-primary">Agenda Calendar</h1>
+
+      <div className="w-full max-w-xl">
+        <Card className="shadow-md">
+          <CardHeader>
+            <CardTitle>Select a Date</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Calendar
+              onChange={(date) => {
+                if (Array.isArray(date)) {
+                  setSelectedDate(date[0]);
+                } else {
+                  setSelectedDate(date);
+                }
+              }}
+              value={selectedDate || new Date()} // Default to a static value
+              className="rounded-lg border shadow-md"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {selectedDate && (
+        <Card className="w-full max-w-xl shadow-lg">
+          <CardHeader>
+            <CardTitle>
+              Agenda for {new Date(selectedDate).toDateString()}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="mt-4 space-y-2">
+              {agendas[formatDateKey(selectedDate)]?.length > 0 ? (
+                agendas[formatDateKey(selectedDate)].map((agenda, index) => (
+                  <li
+                    key={index}
+                    className="flex justify-between items-center p-2 bg-muted rounded"
+                  >
+                    {agenda.isEditing ? (
+                      <Input
+                        type="text"
+                        defaultValue={agenda.text}
+                        onBlur={(e) =>
+                          handleEditAgenda(
+                            formatDateKey(selectedDate),
+                            index,
+                            e.target.value
+                          )
+                        }
+                        className="flex-grow"
+                      />
+                    ) : (
+                      <div
+                        className={`flex-grow truncate ${
+                          agenda.completed
+                            ? "line-through text-muted-foreground"
+                            : ""
+                        }`}
+                        title={agenda.text} // Tooltip to show the full text on hover
+                      >
+                        {agenda.text}
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        variant={agenda.completed ? "default" : "outline"}
+                        onClick={() =>
+                          toggleCompleteAgenda(formatDateKey(selectedDate), index)
+                        }
+                        className="flex items-center gap-1"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span className="hidden md:inline">
+                          {agenda.completed ? "Undo" : "Done"}
+                        </span>
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() =>
+                          toggleEditAgenda(formatDateKey(selectedDate), index)
+                        }
+                        className="flex items-center gap-1"
+                      >
+                        <Edit className="w-4 h-4" />
+                        <span className="hidden md:inline">
+                          {agenda.isEditing ? "Save" : "Edit"}
+                        </span>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() =>
+                          handleRemoveAgenda(formatDateKey(selectedDate), index)
+                        }
+                        className="flex items-center gap-1"
+                      >
+                        <Trash className="w-4 h-4" />
+                        <span className="hidden md:inline">Remove</span>
+                      </Button>
+                    </div>
+                  </li>
+                ))
+              ) : (
+                <li className="text-muted-foreground">No agenda for this day.</li>
+              )}
+            </ul>
+
+            <div className="mt-4 flex gap-2">
+              <Input
+                type="text"
+                value={newAgenda}
+                onChange={(e) => setNewAgenda(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddAgenda()}
+                placeholder="Add a new agenda..."
+                className="flex-grow"
+              />
+              <Button
+                onClick={handleAddAgenda}
+                className="bg-accent text-accent-foreground"
+              >
+                Add
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
